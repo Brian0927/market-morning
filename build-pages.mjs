@@ -23,7 +23,7 @@ await Promise.all(Object.entries(config.newsQueries).map(async([group,q])=>{
   const google={name:'Google News',url:'https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'};
   try{
     const d=group==='global'?await feed(bbc).catch(()=>feed(google)):await feed(google);
-    const picked=group==='global'?[]:direct.filter(a=>patterns[group]?.test(a.title)&&!/韓國瑜|競選總部|站台|選戰/.test(a.title)).slice(0,4);
+    const picked=group==='global'?[]:direct.filter(a=>patterns[group]?.test(a.title)&&!/韓國瑜|競選總部|站台|選戰/.test(a.title)).slice(0,8);
     const additional=group==='global'?(await feed(bbcTech).catch(()=>null))?.items||[]:[];
     const feedItems=group==='global'?[...d.items.slice(0,12),...additional.slice(0,12),...d.items.slice(12)]:d.items;
     const seen=new Set();const selected=[...picked,...feedItems].filter(a=>{if(/facebook|youtube|instagram|tiktok|threads/i.test((a.sourceHome||'')+' '+a.source))return false;const title=a.title.replace(/\s*-\s*[^-]+$/,'');if(seen.has(title))return false;seen.add(title);return true;}).slice(0,group==='global'?24:12);

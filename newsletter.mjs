@@ -9,7 +9,7 @@ function marketItem(quotes,symbols,title,region){const selected=symbols.map(s=>q
 export function makeNewsletter(news,markets,config,generatedAt=new Date().toISOString()){
   const now=Date.parse(generatedAt),byUrl=new Map();
   for(const [group,d] of Object.entries(news))for(const a of d.items||[]){const url=safeUrl(a.originalUrl||a.url);if(!url||!a.title||isNaN(Date.parse(a.date)))continue;const old=byUrl.get(url);if(old){old.groups.push(group);continue;}byUrl.set(url,{...a,groups:[group]});}
-  const pool=[...byUrl.values()].filter(a=>now-Date.parse(a.date)>=-600000&&now-Date.parse(a.date)<=72*3600000&&a.extractionStatus!=='title'&&(a.rewrite?.status==='ready'||(a.abstract&&a.abstract!=='來源未提供可讀取的內文摘要。')));
+  const pool=[...byUrl.values()].filter(a=>now-Date.parse(a.date)>=-600000&&now-Date.parse(a.date)<=72*3600000&&a.extractionStatus!=='title'&&!/競選總部|造勢大會|市議員候選|力挺.{0,12}連任/.test(a.title+' '+a.abstract)&&(a.rewrite?.status==='ready'||(a.abstract&&a.abstract!=='來源未提供可讀取的內文摘要。')));
   const quality=a=>((now-Date.parse(a.date)<=86400000?5:0)+(a.rewrite?.status==='ready'?3:a.extractionStatus==='article'?2:1))*1e12+Date.parse(a.date);
   pool.sort((a,b)=>quality(b)-quality(a));const used=new Set(),usedTitles=new Set();
   const domestic=a=>!(/BBC|CNBC|Reuters/i.test(a.source||''))&&(/台灣|臺灣|台股|台積電|鴻海|台達電|聯發科|新台幣|上市櫃|南亞科|華邦電|群聯|聯電|緯創|廣達|日月光|國內|金控/.test(a.title)||(a.groups.includes('taiwan')&&!/美國|美股|美科技|全球|中國|日本|韓國|Nvidia/.test(a.title)));

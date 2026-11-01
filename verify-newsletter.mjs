@@ -9,6 +9,7 @@ const quotes=['^TWII','^GSPC','^IXIC','^SOX'].map(symbol=>({symbol,name:symbol,p
 const edition=makeNewsletter(news,{quotes},config,generatedAt);
 assert.equal(edition.items.length,10);assert.equal(edition.availableCount,10);assert.equal(edition.newsCount,8);assert.equal(edition.items.filter(i=>i.label==='國內科技').length,4);assert.equal(edition.items.filter(i=>i.label==='國際科技').length,4);
 assert.equal(new Set(edition.items.filter(i=>i.kind==='news').map(i=>i.url)).size,8);
+const campaign=makeNewsletter({tech:{items:[{...article(99,true),abstract:'此篇報導為競選總部的活動資訊。'}]}},{quotes:[]},config,generatedAt);assert.equal(campaign.newsCount,0);
 assert.equal(taipeiDate('2026-11-01T23:59:00Z'),'2026-11-02');
 const missing=makeNewsletter({tech:{items:[{...article(9,true),date:'2020-01-01'}, {...article(10,true),extractionStatus:'title'}]}},{quotes:[]},config,generatedAt);assert.equal(missing.availableCount,0);assert.equal(missing.items.length,10);
 const html=newsletterHtml({...edition,items:[{...edition.items[0],title:'<script>bad</script>',summary:'<img src=x onerror=bad()>',url:'javascript:bad()'}]});assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('href="javascript:'));assert.ok(!html.includes('<img src=x'));
