@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import {defaultWidgets,cleanWidgets,moveWidget,stockSymbol,chartSeries,isCandle} from './ui/widget-model.js';
+import {defaultWidgets,cleanWidgets,moveWidget,stockSymbol,chartSeries,isCandle,relatedStockTitle} from './ui/widget-model.js';
 import {priceChart} from './ui/stock-chart.js';
 import {parseMarketQuote} from './push-service/market.mjs';
 assert.equal(stockSymbol('台積電'),'2330.TW');assert.equal(stockSymbol('NVDA'),'NVDA');assert.equal(stockSymbol('6488.two'),'6488.TWO');assert.equal(stockSymbol('<img src=x>'),null);
+assert.ok(!relatedStockTitle('台股ETF淨申購5,500億元','^GSPC','S&P 500'));assert.ok(relatedStockTitle('S&P 500 closes lower','^GSPC','S&P 500'));assert.ok(relatedStockTitle('輝達新晶片發布','NVDA','NVIDIA'));assert.ok(!relatedStockTitle('Metadata standards update','META','Meta'));
 const state=defaultWidgets();state.pages.home=[];state.pages.markets[0].size='large';const restored=cleanWidgets(JSON.parse(JSON.stringify(state)));assert.equal(restored.pages.home.length,0);assert.equal(restored.pages.markets[0].size,'large');assert.equal(restored.pages.companies.length,5);
 const first=restored.pages.companies[0].id;assert.ok(moveWidget(restored,'companies',first,1));assert.equal(restored.pages.companies[1].id,first);assert.equal(restored.pages.markets[0].size,'large');
 const bad=cleanWidgets({version:1,watchlist:['NVDA','NVDA','https://bad'],pages:{home:[{symbol:'2330',size:'evil',type:'evil',range:'evil'}],markets:[],companies:[]}});assert.deepEqual(bad.watchlist,['NVDA']);assert.equal(bad.pages.home[0].size,'medium');assert.equal(bad.pages.home[0].type,'line');assert.equal(bad.pages.home[0].range,'1mo');assert.equal(bad.pages.markets.length,0);
