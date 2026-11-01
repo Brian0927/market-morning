@@ -8,6 +8,8 @@
 
 **十則晨報：[公開閱讀](https://brian0927.github.io/market-morning/morning/) · [Gmail版預覽](https://brian0927.github.io/market-morning/morning/email.html) · [手機與寄送設定](https://brian0927.github.io/market-morning/setup/)**
 
+**目前使用方式：加入iPhone主畫面並啟用網站推播。** [通知設定頁](https://brian0927.github.io/market-morning/push/) · [完整說明](docs/WEB-PUSH.md)。點通知直接進入公開晨報，不需ChatGPT、Gmail、Apps Script或AI金鑰；每日08:00開始更新，發布完成後通知。
+
 每日十則包含台股、美股各一則與國內／國際新聞各四則。Gmail雲端寄送不需AI金鑰，但首次需使用者在自己的Google Apps Script授權並安裝排程；單純發布本儲存庫不會自動寄信。詳見 [Gmail與iPhone完整教學](docs/GMAIL-MORNING.md)。
 
 公開版採純靜態頁面，不需要讀者登入，也不使用私人 Sites 的 API、R2 或存取憑證。沿用原先的市場晨讀排版與教學，新增 GitHub Actions 自動抓取新聞並發布。
