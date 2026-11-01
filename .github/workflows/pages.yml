@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -29,9 +29,12 @@ jobs:
         with:
           node-version: '22'
       - name: Test Worker
-        run: node build.mjs && node verify.mjs
+        run: node build.mjs && node verify.mjs && node verify-rewrite.mjs
       - uses: actions/configure-pages@v5
       - name: Build public news snapshot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
         run: node build-pages.mjs
       - name: Verify Pages output
         run: node verify-pages.mjs

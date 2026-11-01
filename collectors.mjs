@@ -10,14 +10,18 @@ export function extractArticle(html){let articleBody='';const walk=o=>{if(!o||ty
   if(!articleBody){const region=html.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1];if(region)articleBody=[...region.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m=>text(m[1])).filter(t=>t.length>35&&!/訂閱|廣告|版權|copyright|登入|推薦閱讀/i.test(t)).slice(0,12).join(' ');}
   return {body:text(articleBody).replace(/將\s*Yahoo\s*設為首選來源[，,]?在\s*Google\s*上查看更多我們的精彩報導\s*/g,''),description:meta(html,'og:description')||meta(html,'description'),canonical:decode(html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)/i)?.[1]||'')};}
 const contexts={taiwan:'可對照加權指數、成交量與類股表現，確認新聞影響是否反映在價格；單則報導不等於交易訊號。',global:'留意事件對全球風險偏好、利率與資金流向的影響，並確認美股交易日期與台灣時間的差異。',macro:'可追蹤匯率、利率與能源成本後續變化，對照企業營收與毛利率；不同產業的影響方向可能不同。',tech:'後續可比對訂單、資本支出、出貨與獲利，區分產業題材與已實現的營運成果。',company:'可回到公司公告、月營收與法說查核，觀察營收、獲利率及現金流是否支持報導中的展望。',finance:'留意獲利品質、資產品質、股息來源與需求變化；配息或單一數字不能取代完整判斷。'};
+export function resolveArticleUrl(url){
+  try{const u=new URL(url);if(u.protocol!=='https:')return null;if(u.hostname==='news.google.com'){const encoded=u.pathname.split('/').at(-1);const decoded=Buffer.from(encoded,'base64url').toString('latin1');return decoded.match(/https:\/\/[^\x00-\x20\x7f-\xff]+/)?.[0]||url;}return url;}catch{return null;}
+}
 export async function enrichArticle(a,group,allowFetch=true){let raw=a.description||'',originalUrl=a.url;
   const norm=s=>String(s).replace(/[\s\p{P}]/gu,'');
   let status=norm(raw).replace(norm(a.title),'').replace(norm(a.source),'').length>25?'rss':'title';
-  if(allowFetch&&!a.url.includes('news.google.com/')){try{const r=await fetch(a.url,{signal:AbortSignal.timeout(7000),headers:{'user-agent':'Mozilla/5.0 MarketMorningReader/2.0','accept':'text/html'}});if(r.ok){const extracted=extractArticle(await r.text());if(extracted.body.length>80){raw=extracted.body;status='article';}else if(extracted.description.length>30){raw=extracted.description;status='rss';}if(extracted.canonical.startsWith('https://'))originalUrl=extracted.canonical;}}catch{}}
+  const target=resolveArticleUrl(a.url);
+  if(allowFetch&&target){try{const r=await fetch(target,{signal:AbortSignal.timeout(10000),headers:{'user-agent':'Mozilla/5.0 MarketMorningReader/2.0','accept':'text/html'}});if(r.ok){const html=await r.text();const extracted=extractArticle(html);if(extracted.body.length>80){raw=extracted.body;status='article';}else if(extracted.description.length>30&&!target.includes('news.google.com/')){raw=extracted.description;status='rss';}if(extracted.canonical.startsWith('https://')&&!extracted.canonical.includes('news.google.com/'))originalUrl=extracted.canonical;else if(!r.url.includes('news.google.com/'))originalUrl=r.url;}}catch{}}
   // Keep only a short source excerpt; never republish a publisher's full article.
   const abstract=status==='title'?'來源未提供可讀取的內文摘要。':limited(raw);
   const metrics=[...raw.matchAll(/(營收|毛利率|淨利率|EPS|每股盈餘|稅後純益|成交量|殖利率)[為是達約\s：:]*([\d,]+(?:\.\d+)?\s*(?:%|％|兆元|億元|萬元|億美元|美元|元|倍|bps))/gi)].slice(0,4).map(m=>m[1]+'：'+m[2]);
-  return {...a,id:a.id||idFor(a.url),group,originalUrl,abstract,extractionStatus:status,facts:[],context:contexts[group],highlights:[...new Set(metrics)],description:undefined};
+  return {...a,id:a.id||idFor(a.url),group,originalUrl,abstract,extractionStatus:status,facts:[],context:contexts[group],highlights:[...new Set(metrics)],description:undefined,sourceText:status==='article'?raw:''};
 }
 export async function mapLimit(items,limit,fn){const out=new Array(items.length);let next=0;await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(next<items.length){const i=next++;out[i]=await fn(items[i],i);}}));return out;}
 const symbols=[['^TWII','加權指數'],['^GSPC','S&P 500'],['^IXIC','NASDAQ'],['^SOX','費城半導體'],['2330.TW','台積電'],['2317.TW','鴻海'],['2308.TW','台達電'],['0050.TW','元大台灣50'],['00878.TW','國泰永續高股息']];
