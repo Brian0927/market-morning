@@ -5,7 +5,7 @@
     "taiwan": "台灣 股市 財經 when:1d",
     "global": "global markets economy when:1d",
     "macro": "央行 OR 利率 OR 匯率 OR 原油 when:1d",
-    "tech": "半導體 OR AI OR 伺服器 when:1d",
+    "tech": "半導體 OR AI伺服器 OR 晶片 OR 輝達 OR 電源 when:1d",
     "company": "台積電 OR 鴻海 OR 台達電 when:1d",
     "finance": "金融 OR 消費 OR 產業 when:1d"
   }

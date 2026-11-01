@@ -26,11 +26,26 @@ GitHub 儲存庫首頁是程式碼與 README；真正的閱讀網站是上方 `b
 | 股票觀察名單、參考價、理由、日期 | [`research.json`](research.json) |
 | 投資入門章節 | [`guide.json`](guide.json) |
 | 自己撰寫的精華卡片 | [`editorial.json`](editorial.json) |
-| 排版、CSS、K線圖、計算器 | [`worker/market.mjs`](worker/market.mjs) 中的 `page()` |
+| 公開版頁面與導覽 | [`ui/render.mjs`](ui/render.mjs) |
+| 圓角卡片、配色、動畫、手機排版 | [`ui/style.css`](ui/style.css) |
+| 分類、搜尋、閱讀窗、圖表與計算器 | [`ui/app.js`](ui/app.js) |
+| 內文擷取與股價來源 | [`collectors.mjs`](collectors.mjs) |
 | 公開版抓取與輸出邏輯 | [`build-pages.mjs`](build-pages.mjs) |
 | 發布條件、每日時間 | [`.github/workflows/pages.yml`](.github/workflows/pages.yml) |
 
 JSON 字串需用雙引號，不要留多餘逗號。格式錯誤時 Actions 會失敗，上次成功發布的頁面仍會保留。
+
+## 新版介面
+
+首頁移除介紹大標與模擬帳戶，只呈現新聞、趨勢、公司行情與歷史收盤走勢。深綠、米白與鼠尾草綠維持原有色系，使用不規則圓角卡片。
+
+導覽是五個獨立頁面：總覽、新聞、市場、公司、資料庫；不再是首頁的段落跳轉。資料庫保留原有12篇學習筆記、兩張圖解、部位計算器、完整研究與書籤。
+
+卡片可用滑鼠或鍵盤開啟中央閱讀窗，支援 Escape 關閉、返回原焦點、搜尋與減少動態效果的系統設定。手機自動調整卡片與閱讀窗寬度。
+
+新聞會嘗試擷取公開內文或來源提供的摘要，僅保留短摘要、可辨識數字、追蹤方向與原始連結，不重刊新聞全文。取得不到內文時明示，不能把標題當成完整內容，也沒有AI模型臆測補文。
+
+市場頁使用來源實際回傳的每日收盤資料，顯示時間與延遲狀態；來源失敗保留有日期的備援，無資料不補畫。Yahoo Finance 並非保證可用的正式合約行情來源，格式、頻率與可用性可能變動。
 
 ## 目前功能
 

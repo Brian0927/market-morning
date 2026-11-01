@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const html=await fs.readFile('_site/index.html','utf8');
-assert.ok(html.includes("fetch('./data/'+group+'.json"));
-assert.ok(html.includes("fetch('./data/brief.json"));
-assert.ok(!html.includes("fetch('/api/"));
-new Function(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+import {parseFeed,extractArticle,parseQuote,enrichArticle} from './collectors.mjs';
+for(const [page,base] of [['','./'],['news/','../'],['markets/','../'],['companies/','../'],['library/','../']]){const html=await fs.readFile('_site/'+page+'index.html','utf8');assert.ok(html.includes('data-base="'+base+'"'));assert.ok(html.includes(base+'assets/app.js'));assert.ok(!html.includes('先看懂市場'));assert.ok(!html.includes('50,000'));for(const route of ['news/','markets/','companies/','library/'])assert.ok(html.includes('href="'+base+route+'"'));assert.ok(!/href="#[^" ]+"/.test(html));assert.ok(html.includes('<dialog id="reader"'));}
+const js=await fs.readFile('_site/assets/app.js','utf8');new Function(js);assert.ok(!js.includes("fetch('/api/"));
+const research=JSON.parse(await fs.readFile('research.json','utf8')),guide=JSON.parse(await fs.readFile('guide.json','utf8')),catalog=JSON.parse(await fs.readFile('_site/data/catalog.json','utf8'));
+assert.deepEqual(catalog.research,research);assert.deepEqual(catalog.guide,guide);assert.equal(catalog.diagrams.length,2);assert.ok(catalog.resources.length>=10);
 for(const group of ['taiwan','global','macro','tech','company','finance']){const d=JSON.parse(await fs.readFile('_site/data/'+group+'.json','utf8'));assert.ok(Array.isArray(d.items));}
-const brief=JSON.parse(await fs.readFile('_site/data/brief.json','utf8'));assert.ok(Array.isArray(brief.items));
-assert.ok(!html.includes('OAI-Sites-Authorization'));
-console.log('PASS: project-relative paths, static data, browser syntax, no private service credential');
+const markets=JSON.parse(await fs.readFile('_site/data/markets.json','utf8'));assert.equal(markets.quotes.length,9);for(const q of markets.quotes)assert.ok(Array.isArray(q.series));
+const feed=parseFeed('<rss><item><title><![CDATA[營收 &amp; 獲利]]></title><link>https://example.com/a</link><pubDate>Sun, 01 Nov 2026 00:00:00 GMT</pubDate><description><![CDATA[<p>企業公開報告數據</p>]]></description></item></rss>','測試來源');assert.equal(feed[0].title,'營收 & 獲利');assert.equal(feed[0].description,'企業公開報告數據');
+const body=extractArticle('<script type="application/ld+json">{"@type":"NewsArticle","articleBody":"實際報導內文"}</script>');assert.equal(body.body,'實際報導內文');
+const q=parseQuote({meta:{symbol:'TEST',currency:'TWD',regularMarketPrice:105,regularMarketTime:1000},timestamp:[1,2],indicators:{quote:[{close:[100,105]}]}},'測試');assert.equal(q.change,5);assert.equal(q.changePercent,5);assert.equal(q.series.length,2);
+const missing=await enrichArticle({title:'只取得標題',url:'https://example.com',source:'測試',description:'只取得標題 測試'},'taiwan',false);assert.equal(missing.extractionStatus,'title');assert.equal(missing.highlights.length,0);
+console.log('PASS: five routes, project-relative assets, complete original catalog/diagrams, market data, article extraction and missing-body labels');
