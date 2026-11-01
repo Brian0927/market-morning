@@ -1,3 +1,4 @@
+import {marketResponse} from './market.mjs';
 const FRONTEND='https://brian0927.github.io';
 const HOME=FRONTEND+'/market-morning/morning/';
 const API_ORIGIN='https://brian-market-push.brianhsieh0927.chatgpt.site';
@@ -47,6 +48,7 @@ async function body(request){const value=await request.text();if(value.length>81
 async function managed(payload,env){if(!/^[A-Za-z0-9_-]{43}$/.test(payload.id||'')||typeof payload.token!=='string'||payload.token.length>128)return null;const item=await env.BUCKET.get('subscriptions/'+payload.id);if(!item)return null;const record=await item.json();return record.tokenHash===await digest(payload.token)?record:null;}
 export default {async fetch(request,env){
   const path=new URL(request.url).pathname;
+  if(path==='/api/market'&&request.method==='GET')return marketResponse(request,env);
   if(path==='/'||path==='/health')return response({service:'市場晨讀通知服務',version:1,configured:!!(env.BUCKET&&env.VAPID_PUBLIC_KEY&&env.VAPID_PRIVATE_JWK),readingUrl:HOME});
   if(path==='/api/config'&&request.method==='GET')return response({publicKey:env.VAPID_PUBLIC_KEY||'',readingUrl:HOME});
   if(request.method==='OPTIONS'){if(request.headers.get('origin')!==FRONTEND)return response({error:'origin-denied'},403);return response({ok:true});}

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {defaultWidgets,cleanWidgets,moveWidget,stockSymbol,chartSeries,isCandle} from './ui/widget-model.js';
+import {priceChart} from './ui/stock-chart.js';
+import {parseMarketQuote} from './push-service/market.mjs';
+assert.equal(stockSymbol('台積電'),'2330.TW');assert.equal(stockSymbol('NVDA'),'NVDA');assert.equal(stockSymbol('6488.two'),'6488.TWO');assert.equal(stockSymbol('<img src=x>'),null);
+const state=defaultWidgets();state.pages.home=[];state.pages.markets[0].size='large';const restored=cleanWidgets(JSON.parse(JSON.stringify(state)));assert.equal(restored.pages.home.length,0);assert.equal(restored.pages.markets[0].size,'large');assert.equal(restored.pages.companies.length,5);
+const first=restored.pages.companies[0].id;assert.ok(moveWidget(restored,'companies',first,1));assert.equal(restored.pages.companies[1].id,first);assert.equal(restored.pages.markets[0].size,'large');
+const bad=cleanWidgets({version:1,watchlist:['NVDA','NVDA','https://bad'],pages:{home:[{symbol:'2330',size:'evil',type:'evil',range:'evil'}],markets:[],companies:[]}});assert.deepEqual(bad.watchlist,['NVDA']);assert.equal(bad.pages.home[0].size,'medium');assert.equal(bad.pages.home[0].type,'line');assert.equal(bad.pages.home[0].range,'1mo');assert.equal(bad.pages.markets.length,0);
+const data={meta:{symbol:'TEST',currency:'USD',regularMarketPrice:102,previousClose:100,dataGranularity:'1d'},timestamp:[Date.parse('2026-10-01')/1000,Date.parse('2026-10-02')/1000,Date.parse('2026-10-03')/1000],indicators:{quote:[{open:[100,105,null],high:[104,107,null],low:[99,100,null],close:[103,102,101],volume:[500,800,null]}]}};
+const quote=parseMarketQuote(data);assert.equal(quote.changePercent,2);assert.equal(quote.series[1].open,105);assert.equal(quote.series[1].volume,800);assert.equal(quote.series[2].open,null);assert.ok(isCandle(quote.series[0]));assert.ok(!isCandle(quote.series[2]));
+const candles=priceChart(quote,{type:'candle',range:'1mo'});assert.ok(candles.includes('#c44b43'));assert.ok(candles.includes('#25836b'));assert.ok(candles.includes('2筆資料'));assert.ok(candles.includes('真實開高低收K線'));assert.ok(priceChart(quote,{type:'line'}).includes('3筆資料'));
+assert.equal(chartSeries(quote,'1d').length,0);assert.equal(chartSeries({...quote,interval:'5m'},'1d').length,3);
+assert.ok(priceChart({...quote,name:'<script>evil</script>'},{type:'line'}).includes('&lt;script&gt;'));assert.ok(!priceChart({...quote,series:quote.series.map(p=>({time:p.time,close:p.close}))},{type:'candle'}).includes('<svg'));
+console.log('PASS: independent page layouts, explicit empty state, follow deduplication, order and size persistence, symbol safety, real OHLCV, red/green K bars, no fabricated candles or intraday fallback');

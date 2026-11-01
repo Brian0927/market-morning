@@ -2,10 +2,12 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 const pages=[['home','總覽',''],['morning','晨報','morning/'],['news','新聞','news/'],['markets','市場','markets/'],['companies','公司','companies/'],['library','資料庫','library/']];
 export async function renderPages(root,config){
-  const assetVersion=crypto.createHash('sha256').update(await fs.readFile('ui/app.js')).update(await fs.readFile('ui/style.css')).update(await fs.readFile('ui/morning.css')).update(await fs.readFile('ui/push.js')).digest('hex').slice(0,12);
+  const hash=crypto.createHash('sha256');for(const file of ['app.js','style.css','morning.css','push.js','widgets.js','widget-model.js','stock-chart.js','widgets.css'])hash.update(await fs.readFile('ui/'+file));const assetVersion=hash.digest('hex').slice(0,12);
   await fs.mkdir(root+'/assets',{recursive:true});
-  for(const file of ['app.js','style.css','morning.css'])await fs.copyFile('ui/'+file,root+'/assets/'+file);
+  for(const file of ['app.js','style.css','morning.css','widgets.js','widget-model.js','stock-chart.js'])await fs.copyFile('ui/'+file,root+'/assets/'+file);
   await fs.appendFile(root+'/assets/style.css','\n'+await fs.readFile('ui/morning.css','utf8'));
+  await fs.appendFile(root+'/assets/style.css','\n'+await fs.readFile('ui/widgets.css','utf8'));
+  for(const file of ['app.js','widgets.js','stock-chart.js']){const source=await fs.readFile(root+'/assets/'+file,'utf8');await fs.writeFile(root+'/assets/'+file,source.replace(/from '\.\/(widgets|widget-model|stock-chart)\.js'/g,(_,name)=>"from './"+name+".js?v="+assetVersion+"'"));}
   for(const [page,label,path] of pages){const base=page==='home'?'./':'../';await fs.mkdir(root+'/'+path,{recursive:true});
     const nav=pages.map(([key,name,href])=>`<a href="${base+href}" ${page===key?'aria-current="page"':''}>${name}</a>`).join('');
     await fs.writeFile(root+'/'+path+'index.html',`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#153f38"><meta name="description" content="市場晨讀：每日市場新聞、指數與公司走勢。"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="市場晨讀"><title>${label} · ${String(config.title||'市場晨讀').replace(/[<>&"]/g,'')}</title><link rel="stylesheet" href="${base}assets/style.css?v=${assetVersion}"></head><body data-page="${page}" data-base="${base}">

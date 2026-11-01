@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {normalizeStockSymbol,parseMarketQuote,fetchMarketQuote,marketResponse} from './market.mjs';
+assert.equal(normalizeStockSymbol('2330'),'2330.TW');assert.equal(normalizeStockSymbol(' nvda '),'NVDA');assert.equal(normalizeStockSymbol('6488.two'),'6488.TWO');assert.equal(normalizeStockSymbol('https://localhost'),null);
+const fixture={meta:{symbol:'TEST',currency:'USD',regularMarketPrice:102,dataGranularity:'5m',chartPreviousClose:100},timestamp:[1,2,3],indicators:{quote:[{open:[100,101,null],high:[102,104,null],low:[99,100,null],close:[101,102,null],volume:[10,20,null]}]}};
+const q=parseMarketQuote(fixture);assert.equal(q.series.length,2);assert.equal(q.series[1].high,104);assert.equal(q.series[1].low,100);assert.equal(q.series[1].volume,20);assert.equal(q.change,2);assert.equal(q.changePercent,2);
+const daily=parseMarketQuote({...fixture,meta:{...fixture.meta,dataGranularity:'1d'}});assert.equal(daily.previousClose,101);
+const inconsistent=parseMarketQuote({...fixture,meta:{...fixture.meta,previousClose:100,regularMarketChange:-9,regularMarketChangePercent:-8}});assert.equal(inconsistent.change,2);assert.equal(inconsistent.changePercent,2);
+const partial=parseMarketQuote({...fixture,indicators:{quote:[{close:[101,102]}]}});assert.equal(partial.series[0].open,null);
+let calls=0;const stock=await fetchMarketQuote('6488','1mo',async(url)=>{calls++;if(url.includes('6488.TW?'))return {ok:false,status:404};return {ok:true,json:async()=>({chart:{result:[{...fixture,meta:{...fixture.meta,symbol:'6488.TWO'}}]}})};});assert.equal(stock.symbol,'6488.TWO');assert.equal(calls,2);
+const denied=await marketResponse(new Request('https://service/api/market?symbol=https://localhost'),{});assert.equal(denied.status,400);
+const old={...q,fetchedAt:new Date().toISOString()};const cached=await marketResponse(new Request('https://service/api/market?symbol=TEST'),{BUCKET:{get:async()=>({json:async()=>old})}});assert.equal(cached.status,200);assert.equal((await cached.json()).series[1].high,104);
+console.log('PASS: OHLCV preserved, missing bars not fabricated, intraday uses prior-session close, OTC resolution, symbol validation and cached market data');

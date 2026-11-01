@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test Worker
-        run: node build.mjs && node verify.mjs && node verify-rewrite.mjs && node verify-newsletter.mjs && node push-service/verify.mjs
+        run: node build.mjs && node verify.mjs && node verify-rewrite.mjs && node verify-newsletter.mjs && node push-service/verify.mjs && node push-service/verify-market.mjs && node verify-widgets.mjs
       - uses: actions/configure-pages@v5
       - name: Build public news snapshot
         env:
