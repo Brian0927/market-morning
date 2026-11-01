@@ -4,6 +4,7 @@ import {renderPages} from './ui/render.mjs';
 await import('./build.mjs');
 const worker=(await import('./dist/server/index.js')).default;
 const config=JSON.parse(await fs.readFile('site.config.json','utf8'));
+const articleNotes=JSON.parse(await fs.readFile('article-notes.json','utf8'));
 const offline=process.argv.includes('--offline'),now=new Date().toISOString(),root='_site';
 await fs.mkdir(root+'/data',{recursive:true});
 async function previous(name){if(offline)return null;try{const r=await fetch(config.publicUrl+'data/'+name+'.json',{signal:AbortSignal.timeout(8000)});return r.ok?await r.json():null;}catch{return null;}}
@@ -18,10 +19,11 @@ await Promise.all(Object.entries(config.newsQueries).map(async([group,q])=>{
   try{
     const d=group==='global'?await feed(bbc).catch(()=>feed(google)):await feed(google);
     const picked=group==='global'?[]:direct.filter(a=>patterns[group]?.test(a.title)&&!/韓國瑜|競選總部|站台|選戰/.test(a.title)).slice(0,4);
-    const seen=new Set();const selected=[...picked,...d.items].filter(a=>{const title=a.title.replace(/\s*-\s*[^-]+$/,'');if(seen.has(title))return false;seen.add(title);return true;}).slice(0,12);
+    const seen=new Set();const selected=[...picked,...d.items].filter(a=>{if(/facebook|youtube|instagram|tiktok|threads/i.test((a.sourceHome||'')+' '+a.source))return false;const title=a.title.replace(/\s*-\s*[^-]+$/,'');if(seen.has(title))return false;seen.add(title);return true;}).slice(0,12);
     const items=await mapLimit(selected,3,async(a,i)=>enrichArticle(a,group,!offline&&i<6));
     news[group]={fetchedAt:now,provider:d.provider,items};
   }catch{const old=await previous(group);news[group]=old?.items?.length?{...old,provider:old.provider+' · 備援資料'}:{fetchedAt:null,provider:'來源暫時無法讀取',items:[]};}
+  news[group].items=news[group].items.map(a=>{const note=articleNotes.find(n=>n.url===a.originalUrl||n.url===a.url||n.title===a.title);return note?{...a,...note,url:a.url,originalUrl:note.url,curated:true}:a;});
   await fs.writeFile(root+'/data/'+group+'.json',JSON.stringify(news[group],null,2));console.log(group+': '+news[group].items.length+' articles, '+news[group].items.filter(a=>a.extractionStatus==='article').length+' body summaries');
 }));
 const editorial=JSON.parse(await fs.readFile('editorial.json','utf8'));

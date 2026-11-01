@@ -16,9 +16,8 @@ export async function enrichArticle(a,group,allowFetch=true){let raw=a.descripti
   if(allowFetch&&!a.url.includes('news.google.com/')){try{const r=await fetch(a.url,{signal:AbortSignal.timeout(7000),headers:{'user-agent':'Mozilla/5.0 MarketMorningReader/2.0','accept':'text/html'}});if(r.ok){const extracted=extractArticle(await r.text());if(extracted.body.length>80){raw=extracted.body;status='article';}else if(extracted.description.length>30){raw=extracted.description;status='rss';}if(extracted.canonical.startsWith('https://'))originalUrl=extracted.canonical;}}catch{}}
   // Keep only a short source excerpt; never republish a publisher's full article.
   const abstract=status==='title'?'來源未提供可讀取的內文摘要。':limited(raw);
-  const facts=[...new Set((raw.match(/(?:[\d,]+(?:\.\d+)?\s*(?:%|％|兆元|億元|萬元|美元|元|億美元|年增|年|倍|bps))/g)||[]))].slice(0,7);
   const metrics=[...raw.matchAll(/(營收|毛利率|淨利率|EPS|每股盈餘|稅後純益|成交量|殖利率)[為是達約\s：:]*([\d,]+(?:\.\d+)?\s*(?:%|％|兆元|億元|萬元|億美元|美元|元|倍|bps))/gi)].slice(0,4).map(m=>m[1]+'：'+m[2]);
-  return {...a,id:a.id||idFor(a.url),group,originalUrl,abstract,extractionStatus:status,facts,context:contexts[group],highlights:[...new Set(metrics)],description:undefined};
+  return {...a,id:a.id||idFor(a.url),group,originalUrl,abstract,extractionStatus:status,facts:[],context:contexts[group],highlights:[...new Set(metrics)],description:undefined};
 }
 export async function mapLimit(items,limit,fn){const out=new Array(items.length);let next=0;await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(next<items.length){const i=next++;out[i]=await fn(items[i],i);}}));return out;}
 const symbols=[['^TWII','加權指數'],['^GSPC','S&P 500'],['^IXIC','NASDAQ'],['^SOX','費城半導體'],['2330.TW','台積電'],['2317.TW','鴻海'],['2308.TW','台達電'],['0050.TW','元大台灣50'],['00878.TW','國泰永續高股息']];
