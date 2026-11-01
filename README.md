@@ -6,6 +6,10 @@
 
 **編輯原始碼：[Brian0927/market-morning](https://github.com/Brian0927/market-morning)**
 
+**十則晨報：[公開閱讀](https://brian0927.github.io/market-morning/morning/) · [Gmail版預覽](https://brian0927.github.io/market-morning/morning/email.html) · [手機與寄送設定](https://brian0927.github.io/market-morning/setup/)**
+
+每日十則包含台股、美股各一則與國內／國際新聞各四則。Gmail雲端寄送不需AI金鑰，但首次需使用者在自己的Google Apps Script授權並安裝排程；單純發布本儲存庫不會自動寄信。詳見 [Gmail與iPhone完整教學](docs/GMAIL-MORNING.md)。
+
 公開版採純靜態頁面，不需要讀者登入，也不使用私人 Sites 的 API、R2 或存取憑證。沿用原先的市場晨讀排版與教學，新增 GitHub Actions 自動抓取新聞並發布。
 
 > 教育與研究用途，沒有代下單功能。研究名單保留 2026-10-21 快照，並非即時行情或今天的買賣建議。帳戶金額為練習範例，不需要全額投入。
@@ -28,6 +32,9 @@ GitHub 儲存庫首頁是程式碼與 README；真正的閱讀網站是上方 `b
 | 自己撰寫的精華卡片 | [`editorial.json`](editorial.json) |
 | 個別新聞的詳細整理 | [`article-notes.json`](article-notes.json) |
 | 每則新聞AI改寫流程與驗證 | [`rewrite.mjs`](rewrite.mjs) |
+| 十則晨報與電子報HTML | [`newsletter.mjs`](newsletter.mjs) |
+| Google雲端每日寄送器 | [`delivery/Code.gs`](delivery/Code.gs) |
+| 手機與寄送設定頁 | [`delivery/publish-setup.mjs`](delivery/publish-setup.mjs) |
 | 公開版頁面與導覽 | [`ui/render.mjs`](ui/render.mjs) |
 | 圓角卡片、配色、動畫、手機排版 | [`ui/style.css`](ui/style.css) |
 | 分類、搜尋、閱讀窗、圖表與計算器 | [`ui/app.js`](ui/app.js) |
@@ -41,7 +48,7 @@ JSON 字串需用雙引號，不要留多餘逗號。格式錯誤時 Actions 會
 
 首頁移除介紹大標與模擬帳戶，只呈現新聞、趨勢、公司行情與歷史收盤走勢。深綠、米白與鼠尾草綠維持原有色系，使用不規則圓角卡片。
 
-導覽是五個獨立頁面：總覽、新聞、市場、公司、資料庫；不再是首頁的段落跳轉。資料庫保留原有12篇學習筆記、兩張圖解、部位計算器、完整研究與書籤。
+導覽是六個獨立頁面：總覽、晨報、新聞、市場、公司、資料庫；不再是首頁的段落跳轉。資料庫保留原有12篇學習筆記、兩張圖解、部位計算器、完整研究與書籤。
 
 卡片可用滑鼠或鍵盤開啟中央閱讀窗，支援 Escape 關閉、返回原焦點、搜尋與減少動態效果的系統設定。手機自動調整卡片與閱讀窗寬度。
 

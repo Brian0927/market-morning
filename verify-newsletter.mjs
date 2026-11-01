@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+import {makeNewsletter,newsletterHtml,taipeiDate} from './newsletter.mjs';
+const generatedAt='2026-11-02T00:05:00Z',config={publicUrl:'https://brian0927.github.io/market-morning/'};
+const article=(i,tw)=>({id:String(i),title:(tw?'台積電半導體製程':'International AI chip technology')+' '+i,url:'https://example.com/'+i,date:generatedAt,source:tw?'測試台灣媒體':'BBC Technology',abstract:'已取得來源摘要，供測試挑選與顯示；不補入未提供的事件內容。',extractionStatus:'article'});
+const news={tech:{items:[0,1,2,3].map(i=>article(i,true))},global:{items:[4,5,6,7].map(i=>article(i,false))}};
+const quotes=['^TWII','^GSPC','^IXIC','^SOX'].map(symbol=>({symbol,name:symbol,price:100,changePercent:-1,currency:'USD',asOf:generatedAt,status:'delayed',source:'https://example.com/quote',series:[]}));
+const edition=makeNewsletter(news,{quotes},config,generatedAt);
+assert.equal(edition.items.length,10);assert.equal(edition.availableCount,10);assert.equal(edition.newsCount,8);assert.equal(edition.items.filter(i=>i.label==='國內科技').length,4);assert.equal(edition.items.filter(i=>i.label==='國際科技').length,4);
+assert.equal(new Set(edition.items.filter(i=>i.kind==='news').map(i=>i.url)).size,8);
+assert.equal(taipeiDate('2026-11-01T23:59:00Z'),'2026-11-02');
+const missing=makeNewsletter({tech:{items:[{...article(9,true),date:'2020-01-01'}, {...article(10,true),extractionStatus:'title'}]}},{quotes:[]},config,generatedAt);assert.equal(missing.availableCount,0);assert.equal(missing.items.length,10);
+const html=newsletterHtml({...edition,items:[{...edition.items[0],title:'<script>bad</script>',summary:'<img src=x onerror=bad()>',url:'javascript:bad()'}]});assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('href="javascript:'));assert.ok(!html.includes('<img src=x'));
+
+const code=await fs.readFile('delivery/Code.gs','utf8');let now='2026-11-02T00:10:00Z',fetchCount=0,quota=10,currentEdition={...edition,emailHtml:newsletterHtml(edition),plainText:'測試晨報'},sent=[],triggers=[],props=new Map();
+class ClockDate extends Date{constructor(...args){super(...(args.length?args:[now]));}static now(){return Date.parse(now);}}
+const context={Date:ClockDate,console:{log:()=>{}},Session:{getEffectiveUser:()=>({getEmail:()=> 'recipient@example.test'})},PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k)||null,setProperty:(k,v)=>props.set(k,v),deleteProperty:k=>props.delete(k)})},ScriptApp:{getProjectTriggers:()=>triggers.slice(),deleteTrigger:t=>{triggers=triggers.filter(x=>x!==t);},newTrigger:name=>({timeBased:()=>({everyMinutes:n=>({create:()=>triggers.push({getHandlerFunction:()=>name,interval:n})})})})},Utilities:{formatDate:(date,tz,format)=>format==='H'?new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'numeric',hour12:false}).format(date):taipeiDate(date)},UrlFetchApp:{fetch:()=>{fetchCount++;return {getResponseCode:()=>200,getContentText:()=>JSON.stringify(currentEdition)};}},MailApp:{getRemainingDailyQuota:()=>quota,sendEmail:m=>sent.push(m)},LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})}};
+vm.createContext(context);vm.runInContext(code,context);
+context.installMorningDelivery();context.installMorningDelivery();assert.equal(triggers.length,1);assert.equal(triggers[0].interval,5);assert.equal(sent.length,0);
+now='2026-11-01T23:55:00Z';context.pollMorning();assert.equal(fetchCount,0);
+now='2026-11-02T00:10:00Z';currentEdition={...currentEdition,date:'2026-11-01'};context.pollMorning();assert.equal(sent.length,0);
+currentEdition={...currentEdition,date:'2026-11-02',generatedAt:'2026-11-01T23:50:00Z'};context.pollMorning();assert.equal(sent.length,0);
+currentEdition={...currentEdition,generatedAt};context.pollMorning();context.pollMorning();assert.equal(sent.length,1);assert.equal(props.get('morningSentDay'),'2026-11-02');
+context.sendTestEmail();assert.equal(sent.length,2);assert.equal(props.get('morningSentDay'),'2026-11-02');
+props.delete('morningSentDay');quota=0;assert.throws(()=>context.pollMorning());assert.equal(props.get('morningSentDay'),undefined);
+quota=10;now='2026-11-02T04:10:00Z';context.pollMorning();context.pollMorning();assert.equal(sent.length,3);assert.ok(sent[2].subject.includes('延遲'));
+context.stopMorningDelivery();assert.equal(triggers.length,0);assert.equal(props.get('morningRecipient'),undefined);
+const publicJson=JSON.stringify(edition);assert.ok(!publicJson.includes('recipient@example.test'));assert.ok(!publicJson.includes('OPENAI_API_KEY'));
+console.log('PASS: ten items, four domestic/four international, source freshness, missing-data labels, HTML safety, timezone, cloud scheduling, stale-data wait, duplicate prevention, quota failure and stop');
