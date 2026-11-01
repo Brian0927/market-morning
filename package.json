@@ -1,0 +1,14 @@
+{
+  "name": "market-morning",
+  "version": "1.0.0",
+  "private": true,
+  "description": "市場晨讀：繁體中文市場新聞、每日精華、投資入門與部位風險計算。",
+  "type": "module",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && node preview.mjs",
+    "start": "node preview.mjs",
+    "test": "node build.mjs && node verify.mjs"
+  }
+}
